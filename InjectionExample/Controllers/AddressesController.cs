@@ -8,23 +8,40 @@ using Microsoft.EntityFrameworkCore;
 using InjectionExample.Data;
 using InjectionExample.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace InjectionExample.Controllers
 {
     [Authorize]
     public class AddressesController : Controller
     {
+        private readonly IAuthorizationService _authService;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ApplicationDbContext _context;
 
-        public AddressesController(ApplicationDbContext context)
+        public AddressesController(
+            ApplicationDbContext context,
+            IAuthorizationService authService,
+            UserManager<IdentityUser> userManager
+        )
         {
             _context = context;
+            _authService = authService;
+            _userManager = userManager;
         }
 
         // GET: Addresses
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Addresses.Include(a => a.User);
+            var applicationDbContext = _context.Addresses
+                .Include(a => a.User)
+                .Where(a => a.UserId == _userManager.GetUserId(User));
+
+            if (applicationDbContext == null)
+            {
+                return NotFound();
+            }
+
             return View(await applicationDbContext.ToListAsync());
         }
 

@@ -1,4 +1,6 @@
 using InjectionExample.Data;
+using InjectionExample.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +22,18 @@ namespace InjectionExample
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddControllersWithViews();
 
+            // attach the auth services and policies
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("OwnersOnly", policy =>
+                {
+                    policy.Requirements.Add(new SameAuthorRequirement());
+                });
+            });
+            });
+
+            builder.Services.AddSingleton<IAuthorizationHandler, OwnershipAuthorizationHandler>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -38,6 +52,8 @@ namespace InjectionExample
             app.UseRouting();
 
             app.UseAuthorization();
+
+            
 
             app.MapStaticAssets();
             app.MapControllerRoute(
