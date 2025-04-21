@@ -30,7 +30,6 @@ namespace InjectionExample
                     policy.Requirements.Add(new SameAuthorRequirement());
                 });
             });
-            });
 
             builder.Services.AddSingleton<IAuthorizationHandler, OwnershipAuthorizationHandler>();
 

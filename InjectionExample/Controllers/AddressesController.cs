@@ -18,21 +18,26 @@ namespace InjectionExample.Controllers
         private readonly IAuthorizationService _authService;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ApplicationDbContext _context;
+        private readonly ILogger _logger;
 
         public AddressesController(
             ApplicationDbContext context,
             IAuthorizationService authService,
-            UserManager<IdentityUser> userManager
+            UserManager<IdentityUser> userManager,
+            ILogger<Program> logger
         )
         {
             _context = context;
             _authService = authService;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: Addresses
         public async Task<IActionResult> Index()
         {
+            // not using the authorization service yet
+
             var applicationDbContext = _context.Addresses
                 .Include(a => a.User)
                 .Where(a => a.UserId == _userManager.GetUserId(User));
@@ -56,12 +61,27 @@ namespace InjectionExample.Controllers
             var address = await _context.Addresses
                 .Include(a => a.User)
                 .FirstOrDefaultAsync(m => m.AddressId == id);
+
             if (address == null)
             {
+                _logger.LogWarning("The address was not found in the database");
                 return NotFound();
             }
 
-            return View(address);
+            // needs to use the auth service to check ownership
+            var authResult = await _authService.AuthorizeAsync(User, address, "OwnersOnly");
+
+            if (authResult.Succeeded)
+            {
+                _logger.LogInformation("The user was authorized to access the address");
+                return View(address);
+            }
+            else
+            {
+                // TODO: log failure here
+                _logger.LogCritical($"The authorization result was denied for invalid credentials. {address.UserId} vs {User.Identity?.Name}");
+                return new ForbidResult();
+            }
         }
 
         // GET: Addresses/Create

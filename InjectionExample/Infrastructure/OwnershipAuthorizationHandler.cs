@@ -1,5 +1,6 @@
 ﻿using InjectionExample.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace InjectionExample.Infrastructure
 {
@@ -12,11 +13,16 @@ namespace InjectionExample.Infrastructure
             Address resource
         )
         {
-            if (context.User.Identity?.Name == resource.UserId)
+            // currently failing
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == resource.UserId)
             {
+                // switch to success
                 context.Succeed(requirement);
             }
 
+            // return the task whether or not the task failed or succeeded
             return Task.CompletedTask;
         }
     }
