@@ -11,6 +11,5 @@ namespace InjectionExample.Models
         public string State { get; set; }
         public string Country { get; set; }
         public string UserId { get; set; }
-        public IdentityUser User { get; set; }
     }
 }

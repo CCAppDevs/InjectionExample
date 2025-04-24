@@ -1,0 +1,57 @@
+﻿@model List<InjectionExample.Models.Address>
+
+@{
+    ViewData["Title"] = "Injection";
+}
+
+<h1>Injection</h1>
+<br />
+<hr />
+
+<ul>
+    <li>AddressId - UserId</li>
+    @foreach (var address in Model)
+    {
+      <li>@address.AddressId - @address.UserId</li>
+    }
+</ul>
+
+<hr />
+@* 
+<form asp-action="Create">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="AddressId" />
+    <div class="form-group">
+        <label asp-for="StreetNumber" class="control-label"></label>
+        <input asp-for="StreetNumber" class="form-control" />
+        <span asp-validation-for="StreetNumber" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Street" class="control-label"></label>
+        <input asp-for="Street" class="form-control" />
+        <span asp-validation-for="Street" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="City" class="control-label"></label>
+        <input asp-for="City" class="form-control" />
+        <span asp-validation-for="City" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="State" class="control-label"></label>
+        <input asp-for="State" class="form-control" />
+        <span asp-validation-for="State" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Country" class="control-label"></label>
+        <input asp-for="Country" class="form-control" />
+        <span asp-validation-for="Country" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="UserId" class="control-label"></label>
+        <input asp-for="UserId" class="form-control" value=@ViewData["UserId"] readonly />
+        <span asp-validation-for="UserId" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Save" class="btn btn-primary" />
+    </div>
+</form> *@

@@ -39,7 +39,6 @@ namespace InjectionExample.Controllers
             // not using the authorization service yet
 
             var applicationDbContext = _context.Addresses
-                .Include(a => a.User)
                 .Where(a => a.UserId == _userManager.GetUserId(User));
 
             if (applicationDbContext == null)
@@ -59,7 +58,6 @@ namespace InjectionExample.Controllers
             }
 
             var address = await _context.Addresses
-                .Include(a => a.User)
                 .FirstOrDefaultAsync(m => m.AddressId == id);
 
             if (address == null)
@@ -87,7 +85,7 @@ namespace InjectionExample.Controllers
         // GET: Addresses/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id");
+            ViewData["UserId"] = _userManager.GetUserId(User);
             return View();
         }
 
@@ -98,13 +96,21 @@ namespace InjectionExample.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("AddressId,StreetNumber,Street,City,State,Country,UserId")] Address address)
         {
+            _logger.LogInformation("Entered the create function, pre userid lookup");
+            // TODO: manually attach the user id to the address before validation
+
+            if (address.UserId == null)
+            {
+                return new ChallengeResult();
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(address);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", address.UserId);
+
             return View(address);
         }
 
@@ -121,8 +127,19 @@ namespace InjectionExample.Controllers
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", address.UserId);
-            return View(address);
+
+            var authResult = await _authService.AuthorizeAsync(User, address, "OwnersOnly");
+
+            if (authResult.Succeeded)
+            {
+                ViewData["UserId"] = _userManager.GetUserId(User);
+                return View(address);
+            }
+            else
+            {
+                return new ForbidResult();
+            }
+                
         }
 
         // POST: Addresses/Edit/5
@@ -135,6 +152,13 @@ namespace InjectionExample.Controllers
             if (id != address.AddressId)
             {
                 return NotFound();
+            }
+
+            var authResult = await _authService.AuthorizeAsync(User, address, "OwnersOnly");
+
+            if (!authResult.Succeeded)
+            {
+                return new ForbidResult();
             }
 
             if (ModelState.IsValid)
@@ -170,14 +194,22 @@ namespace InjectionExample.Controllers
             }
 
             var address = await _context.Addresses
-                .Include(a => a.User)
                 .FirstOrDefaultAsync(m => m.AddressId == id);
             if (address == null)
             {
                 return NotFound();
             }
 
-            return View(address);
+            var authResult = await _authService.AuthorizeAsync(User, address, "OwnersOnly");
+
+            if (authResult.Succeeded)
+            {
+                return View(address);
+            }
+            else
+            {
+                return new ForbidResult();
+            }
         }
 
         // POST: Addresses/Delete/5
@@ -186,13 +218,25 @@ namespace InjectionExample.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var address = await _context.Addresses.FindAsync(id);
-            if (address != null)
+            
+            if (address == null)
             {
-                _context.Addresses.Remove(address);
+                return NotFound();
             }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            var authResult = await _authService.AuthorizeAsync(User, address, "OwnersOnly");
+
+            if (authResult.Succeeded)
+            {
+                _context.Addresses.Remove(address);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                _logger.LogCritical($"UserId: {User.Identity?.Name} was denied access to delete addressId: {address.AddressId}");
+                return new ForbidResult();
+            }
         }
 
         private bool AddressExists(int id)
